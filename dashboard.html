@@ -1,0 +1,54 @@
+<html>
+
+<script type='text/javascript' src='jquery-2.1.1.js'></script>
+<script type='text/javascript' src='jquery.flot.js'></script>
+<script type='text/javascript' src='jquery.flot.time.js'></script>
+<script type='text/javascript'>
+
+$(document).ready(function() {
+    var source = new EventSource('/data');
+    var plots = new Array();
+    var plot_data = new Array();
+    var plot_params = {
+        xaxis: {
+            mode: 'time', 
+            timeformat: '%H:%M',
+//            timeformat: '%y-%m-%d %H:%M:%S',
+            tickSize: [1, 'minute'],
+        },
+    };
+    plots['light'] = $.plot($("#plot-light"), [[]], plot_params);
+    plots['humidity'] = $.plot($("#plot-humidity"), [[]], plot_params);
+
+    plots['light'].draw();
+    plots['humidity'].draw();
+    plot_data['light'] = [[]];
+    plot_data['humidity'] = [[]];
+
+    source.onmessage = function (event) {
+        value = JSON.parse(event.data);
+        name = value['name'];
+        plot = plots[name];
+        data = plot_data[name];
+
+        x = new Date(value['time'] * 1000);
+        y = value['value'];
+        data.push([x, y]);
+        if (data.length > 600)
+            data.shift();
+
+        plot.setData([data]);
+        plot.setupGrid();
+        plot.draw();
+    };
+})
+
+</script>
+
+<body>
+<h3>Light</h3>
+<div id="plot-light" style="width:400px;height:200px"></div>
+<h3>Humidity</h3>
+<div id="plot-humidity" style="width:400px;height:200px"></div>
+</body>
+</html>
